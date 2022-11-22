@@ -44,12 +44,14 @@ async def on_ready():
 
 
 @client.command()
-async def get_data(ctx, player_name=None):
+async def get_data(ctx, player_name=None, player_number=None):
     global data
     # Return if empty name
     if player_name is None:
         await ctx.send("Please enter a name.")
         return
+    if player_number is not None:
+        player_number = int(player_number)
     # Find player
     if data is None:
         player_data_success = get_player_data()
@@ -65,7 +67,7 @@ async def get_data(ctx, player_name=None):
         await ctx.send("Player not found.")
         return
     # Send data when multiple accounts exist
-    if len(player_indexes) > 1:
+    if len(player_indexes) > 1 and player_number is None:
         file = open(str(player_indexes[0]) + ".txt", "w")
         for x, i in enumerate(player_indexes):
             file.write(f"{player_name} {x+1}\n")
@@ -84,6 +86,11 @@ async def get_data(ctx, player_name=None):
         if os.path.exists(str(player_indexes[0]) + ".txt"):
             os.remove(str(player_indexes[0]) + ".txt")
         return
+    elif player_number is not None:
+        if player_number < 1 or player_number > len(player_indexes):
+            await ctx.send("Player not found.")
+            return
+        player_indexes = [player_indexes[player_number-1]]
     # Send data when one account exists
     embeds = []
     for x, i in enumerate(player_indexes):
