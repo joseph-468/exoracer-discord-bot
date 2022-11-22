@@ -16,7 +16,7 @@ data = None
 # Open data
 def get_player_data():
     global data
-    # Get data from the web
+    # Get data from exo.lgms.nl
     try:
         url = "https://exo.lgms.nl/?api&users"
         json_data = requests.get(url=url).json()
@@ -60,10 +60,14 @@ async def get_data(ctx, player_name=None):
         return
     # Send data
     embeds = []
+    number = ""
+    if len(player_indexes) > 1:
+        number = " 1"
     for x, i in enumerate(player_indexes):
-        embed = discord.Embed(title=player_name, color=0x7244CD)
+        embed = discord.Embed(title=f"{player_name}{number}", color=0x7244CD)
         embed_fields = [data[0][i], data[6][i], data[9][i],
                         data[3][i], data[4][i], data[5][i]]
+        number = " " + str(x + 2)
         for y, j in enumerate(embed_fields):
             if not j:
                 embed_fields[y] = "null"
