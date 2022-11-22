@@ -51,7 +51,11 @@ async def get_data(ctx, player_name=None, player_number=None):
         await ctx.send("Please enter a name.")
         return
     if player_number is not None:
-        player_number = int(player_number)
+        try:
+            player_number = int(player_number)
+        except ValueError:
+            await ctx.send("Player number must be an integer.")
+            return
     # Find player
     if data is None:
         player_data_success = get_player_data()
