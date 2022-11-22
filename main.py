@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 import discord
 from discord import Intents
 from discord.ext import commands
@@ -11,6 +12,7 @@ client = commands.Bot(command_prefix=">", intents=intents)
 client.remove_command("help")
 data_fields = ["UserID", "Country", "ClubName", "Skin", "Trail", "HookSkin"]
 data = None
+READ_FROM_FILE = True
 
 
 # Open data
@@ -18,8 +20,12 @@ def get_player_data():
     global data
     # Get data from exo.lgms.nl
     try:
-        url = "https://exo.lgms.nl/?api&users"
-        json_data = requests.get(url=url).json()
+        if READ_FROM_FILE:
+            file = open("data.json")
+            json_data = json.load(file)
+            file.close()
+        if not READ_FROM_FILE:
+            json_data = requests.get(url="https://exo.lgms.nl/?api&users").json()
         fields = json_data["fields"]
         json_data = json_data["data"]
         data = [None] * len(fields)
@@ -58,16 +64,32 @@ async def get_data(ctx, player_name=None):
     if not player_indexes:
         await ctx.send("Player not found.")
         return
-    # Send data
-    embeds = []
-    number = ""
+    # Send data when multiple accounts exist
     if len(player_indexes) > 1:
-        number = " 1"
+        file = open(str(player_indexes[0]) + ".txt", "w")
+        for x, i in enumerate(player_indexes):
+            file.write(f"{player_name} {x+1}\n")
+            fields = [data[0][i], data[6][i], data[9][i],
+                        data[3][i], data[4][i], data[5][i]]
+            for y, j in enumerate(fields):
+                if not j:
+                    fields[y] = "null"
+            for y, j in enumerate(fields):
+                file.write(f"{data_fields[y]}: {j}\n")
+            file.write("\n")
+        file.close()
+        file = open(str(player_indexes[0]) + ".txt", "rb")
+        await ctx.send(file=discord.File(file, f"{player_name}.txt"))
+        file.close()
+        if os.path.exists(str(player_indexes[0]) + ".txt"):
+            os.remove(str(player_indexes[0]) + ".txt")
+        return
+    # Send data when one account exists
+    embeds = []
     for x, i in enumerate(player_indexes):
-        embed = discord.Embed(title=f"{player_name}{number}", color=0x7244CD)
+        embed = discord.Embed(title=player_name, color=0x7244CD)
         embed_fields = [data[0][i], data[6][i], data[9][i],
                         data[3][i], data[4][i], data[5][i]]
-        number = " " + str(x + 2)
         for y, j in enumerate(embed_fields):
             if not j:
                 embed_fields[y] = "null"
