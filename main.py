@@ -28,7 +28,7 @@ def get_player_data():
             json_data = requests.get(url="https://exo.lgms.nl/?api&users").json()
         fields = json_data["fields"]
         json_data = json_data["data"]
-        data = [None] * len(fields)
+        data = [[]] * len(fields)
         for i in range(len(fields)):
             data[i] = [j[i] for j in json_data]
     except Exception:
@@ -76,7 +76,7 @@ async def get_data(ctx, player_name=None, player_number=None):
         for x, i in enumerate(player_indexes):
             file.write(f"{player_name} {x+1}\n")
             fields = [data[0][i], data[6][i], data[9][i],
-                        data[3][i], data[4][i], data[5][i]]
+                      data[3][i], data[4][i], data[5][i]]
             for y, j in enumerate(fields):
                 if not j:
                     fields[y] = "null"
