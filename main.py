@@ -11,68 +11,80 @@ intents = Intents.all()
 client = commands.Bot(command_prefix=">", intents=intents)
 client.remove_command("help")
 data_fields = ["UserID", "Country", "ClubName", "Skin", "Trail", "HookSkin"]
-data = None
+data = []
 READ_FROM_FILE = True
 
 
-# Open data
+# Import data
 def get_player_data():
     global data
-    # Get data from exo.lgms.nl
     try:
         if READ_FROM_FILE:
-            file = open("data.json")
-            json_data = json.load(file)
-            file.close()
-        if not READ_FROM_FILE:
+            try:
+                # Imports data from file
+                file = open("data.json", "r")
+                json_data = json.load(file)
+                file.close()
+            except Exception:
+                # Imports data from L3's site and saves it locally
+                json_data = requests.get(url="https://exo.lgms.nl/?api&users").json()
+                file = open("data.json", "w")
+                json.dump(json_data, file, indent=3)
+                file.close()
+        else:
+            # Imports data from L3's site and saves it locally
             json_data = requests.get(url="https://exo.lgms.nl/?api&users").json()
+            file = open("data.json", "w")
+            json.dump(json_data, file, indent=3)
+            file.close()
+        # Convert data from json to multiple strings
         fields = json_data["fields"]
         json_data = json_data["data"]
         data = [[]] * len(fields)
         for i in range(len(fields)):
             data[i] = [j[i] for j in json_data]
     except Exception:
-        print("Error gathering data.")
-        return "Error"
-    return "No Error"
+        # Returns error found
+        return False
+    # Returns no error found
+    return True
 
 
-# Functions
-@client.event
-async def on_ready():
-    print("Bot started.")
-
-
+# Commands
 @client.command()
 async def get_data(ctx, player_name=None, player_number=None):
     global data
-    # Return if empty name
+    # Returns with error if name argument is missing
     if player_name is None:
         await ctx.send("Please enter a name.")
         return
+    # Convert player number to integer and returns with an error if not an integer
     if player_number is not None:
         try:
             player_number = int(player_number)
         except ValueError:
             await ctx.send("Player number must be an integer.")
             return
-    # Find player
-    if data is None:
+    # If data is not in memory import it, returns if there is an error
+    if not data:
         player_data_success = get_player_data()
-        if player_data_success == "Error":
+        if not player_data_success:
             await ctx.send("Error gathering data.")
             return
+    # Searches through all name fields and stores index of matching names
     player_indexes = []
     for x, i in enumerate(data[1]):
         if i == player_name:
             player_indexes.append(x)
-    # Return if player not found
+    # Returns if player is not found
     if not player_indexes:
         await ctx.send("Player not found.")
         return
+
     # Send data when multiple accounts exist
     if len(player_indexes) > 1 and player_number is None:
         file = open(str(player_indexes[0]) + ".txt", "w")
+        path = player_indexes[0]
         for x, i in enumerate(player_indexes):
             file.write(f"{player_name} {x+1}\n")
             fields = [data[0][i], data[6][i], data[9][i],
@@ -84,9 +96,7 @@ async def get_data(ctx, player_name=None, player_number=None):
                 file.write(f"{data_fields[y]}: {j}\n")
             file.write("\n")
         file.close()
-        file = open(str(player_indexes[0]) + ".txt", "rb")
-        await ctx.send(file=discord.File(file, f"{player_name}.txt"))
-        file.close()
+        await ctx.send(file=discord.File(f"{path}.txt", f"{player_name}.txt"))
         if os.path.exists(str(player_indexes[0]) + ".txt"):
             os.remove(str(player_indexes[0]) + ".txt")
         return
@@ -111,7 +121,7 @@ async def get_data(ctx, player_name=None, player_number=None):
         await ctx.send(embed=embed)
 
 
-# Run bot
+# Import token from env file and run bot
 if __name__ == "__main__":
     load_dotenv()
     client.run(os.getenv("TOKEN"))
