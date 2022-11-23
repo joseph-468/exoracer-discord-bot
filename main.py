@@ -16,10 +16,10 @@ READ_FROM_FILE = True
 
 
 # Import data
-def get_player_data():
+def get_player_data(read_from_file):
     global data
     try:
-        if READ_FROM_FILE:
+        if read_from_file:
             try:
                 # Imports data from file
                 file = open("data.json", "r")
@@ -67,8 +67,8 @@ async def get_data(ctx, player_name=None, player_number=None):
             return
     # If data is not in memory import it, returns if there is an error
     if not data:
-        player_data_success = get_player_data()
-        if not player_data_success:
+        data_import_success = get_player_data(READ_FROM_FILE)
+        if not data_import_success:
             await ctx.send("Error gathering data.")
             return
     # Searches through all name fields and stores index of matching names
@@ -124,7 +124,20 @@ async def get_data(ctx, player_name=None, player_number=None):
     await ctx.send(embed=embed)
 
 
-# Import token from env file and run bot
+@client.command()
+async def update_data(ctx):
+    # Send data update message, update data then delete the message
+    update_message = await ctx.send("Updating...")
+    data_import_success = get_player_data(False)
+    await update_message.delete()
+    # Send success message
+    if not data_import_success:
+        await ctx.send("Data failed to update.")
+    else:
+        await ctx.send("Data updated successfully.")
+
+
+# Import token from env file and run the bot
 if __name__ == "__main__":
     load_dotenv()
     client.run(os.getenv("TOKEN"))
