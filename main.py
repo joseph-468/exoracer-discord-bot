@@ -97,7 +97,6 @@ async def get_data(ctx, player_name=None, player_number=None):
                 file.write(f"{data_fields[y]}: {j}\n")
             file.write("\n")
         file.close()
-
         # Sends file, deletes it and returns
         await ctx.send(file=discord.File(path, f"{player_name}.txt"))
         if os.path.exists(path):
